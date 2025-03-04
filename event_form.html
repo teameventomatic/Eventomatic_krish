@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GenReport - Activity Report Generator</title>
+  <!-- Link Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Ensure full-page coverage */
+    body, html {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .background-overlay {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+      overflow-y: auto; /* Enable vertical scrollbar */
+      max-height: 90vh; /* Prevent content from exceeding viewport height */
+      padding: 20px;
+    }
+
+    /* Add padding to the scrollbar for better aesthetics */
+    .container::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .container::-webkit-scrollbar-thumb {
+      background: #6c757d;
+      border-radius: 4px;
+    }
+
+    .container::-webkit-scrollbar-track {
+      background: #e9ecef;
+    }
+
+    .event-tag {
+      background-color: #e9ecef;
+      padding: 8px 12px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 8px;
+      margin-right: 8px;
+    }
+
+    .event-tag button {
+      background: none;
+      border: none;
+      color: #dc3545;
+      font-size: 18px;
+      margin-left: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="background-overlay">
+    <div class="container">
+      <h1 class="text-center">GenReport</h1>
+      <p class="text-center">Generate detailed activity reports effortlessly!</p>
+      <form action="generate_report.php" method="POST" enctype="multipart/form-data">
+        <!-- Academic Year and Date -->
+        <div class="mb-3">
+          <label for="academicYear" class="form-label">Academic Year:</label>
+          <input type="text" id="academicYear" name="academicYear" class="form-control" placeholder="e.g., 2024-25" required>
+        </div>
+        <div class="mb-3">
+          <label for="eventDate" class="form-label">Event Date:</label>
+          <input type="date" id="eventDate" name="eventDate" class="form-control" required>
+        </div>
+
+        <!-- Activity Title -->
+        <div class="mb-3">
+          <label for="activityTitle" class="form-label">Activity Title:</label>
+          <input type="text" id="activityTitle" name="activityTitle" class="form-control" placeholder="e.g., Alumni Expert Session" required>
+        </div>
+
+        <!-- Venue and Event Time -->
+        <div class="mb-3">
+          <label for="venue" class="form-label">Venue:</label>
+          <input type="text" id="venue" name="venue" class="form-control" placeholder="e.g., Microsoft Teams" required>
+        </div>
+        
+        <div class="mb-3">
+          <label for="eventTime" class="form-label">Event Time:</label>
+          <input type="time" id="eventTime" name="eventTime" class="form-control" required>
+        </div>
+
+        <!-- Event Held For: Dynamic Add System -->
+        <div class="mb-3">
+          <label class="form-label">Event Held For:</label>
+          <div id="eventForContainer"></div>
+          <button type="button" class="btn btn-success mt-2" onclick="addEventFor()">Add Department/Class</button>
+        </div>
+
+        <!-- Expert Name and Coordinator Name -->
+        <div class="mb-3">
+          <label for="expertName" class="form-label">Expert Name:</label>
+          <input type="text" id="expertName" name="expertName" class="form-control" placeholder="e.g., Mr. Onkar Kulkarni" required>
+        </div>
+        <div class="mb-3">
+          <label for="coordinatorName" class="form-label">Coordinator Name:</label>
+          <input type="text" id="coordinatorName" name="coordinatorName" class="form-control" placeholder="e.g., Mrs. Nilam Patil" required>
+        </div>
+
+        <!-- Images -->
+        <div class="mb-3">
+          <label for="eventImages" class="form-label">Upload Event Images(Max 2):</label>
+          <input type="file" id="eventImages" name="eventImages[]" class="form-control" multiple>
+        </div>
+
+        <!-- Honourable Persons Section -->
+         <div class="mb-3">
+            <label class="form-label">Honourable Persons:</label>
+            <div id="honourablePersonsContainer"></div>
+            <button type="button" class="btn btn-primary mt-2" onclick="addHonourablePerson()">Add Honourable Person</button>
+        </div>
+
+        <!-- Report Format -->
+        <div class="mb-3">
+          <label for="format" class="form-label">Report Format:</label>
+          <select id="format" name="format" class="form-select" required>
+            <option value="word">Word</option>
+            <option value="pdf">PDF</option>
+          </select>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="text-center">
+          <button type="submit" class="btn btn-primary">Generate Report</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+<script>
+function addHonourablePerson() {
+  const container = document.getElementById('honourablePersonsContainer');
+  const personTag = document.createElement('div');
+  personTag.classList.add('person-tag', 'd-flex', 'align-items-center', 'mt-2');
+
+  // Dropdown for designation
+  const designationSelect = document.createElement('select');
+  designationSelect.name = 'designationSelect[]'; // Ensure this matches the PHP code
+  designationSelect.classList.add('form-select', 'me-2');
+  designationSelect.required = true;
+  designationSelect.innerHTML = `
+      <option value="" disabled selected>Select Designation</option>
+      <option value="HOD">HOD</option>
+      <option value="Principal">Principal</option>
+  `;
+
+  // Input field for entering the person's name
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.name = 'honourable_name[]'; // Ensure this matches the PHP code
+  nameInput.classList.add('form-control', 'me-2');
+  nameInput.placeholder = 'Enter Name';
+  nameInput.required = true;
+
+  // Remove button
+  const removeButton = document.createElement('button');
+  removeButton.type = 'button';
+  removeButton.classList.add('btn', 'btn-danger');
+  removeButton.innerHTML = '&times;';
+  removeButton.onclick = () => personTag.remove();
+
+  personTag.appendChild(designationSelect);
+  personTag.appendChild(nameInput);
+  personTag.appendChild(removeButton);
+
+  container.appendChild(personTag);
+}
+</script>
+
+  <!-- Link Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Function to dynamically add event department/class with a remove button
+    function addEventFor() {
+      const container = document.getElementById('eventForContainer');
+      const eventTag = document.createElement('div');
+      eventTag.classList.add('event-tag');
+
+      const departmentSelect = document.createElement('select');
+      departmentSelect.name = 'department[]';
+      departmentSelect.classList.add('form-select', 'me-2');
+      departmentSelect.required = true;
+      departmentSelect.innerHTML = `
+        <option value="" disabled selected>Select Department</option>
+        <option value="Computer Engineering">Computer Engineering</option>
+        <option value="Information Technology">Information Technology</option>
+        <option value="Mechanical Engineering">Mechanical Engineering</option>
+        <option value="Civil Engineering">Civil Engineering</option>
+        <option value="Electronics Engineering">Electronics Engineering</option>
+        <option value="Electrical Engineering">Electrical Engineering</option>
+      `;
+
+      const classSelect = document.createElement('select');
+      classSelect.name = 'class[]';
+      classSelect.classList.add('form-select', 'me-2');
+      classSelect.required = true;
+      classSelect.innerHTML = `
+        <option value="" disabled selected>Select Class</option>
+        <option value="FE">FE</option>
+        <option value="SE">SE</option>
+        <option value="TE">TE</option>
+        <option value="BE">BE</option>
+      `;
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.innerHTML = '&times;';
+      removeButton.onclick = () => eventTag.remove();
+
+      eventTag.appendChild(departmentSelect);
+      eventTag.appendChild(classSelect);
+      eventTag.appendChild(removeButton);
+
+      container.appendChild(eventTag);
+    }
+  </script>
+</body>
+</html>
